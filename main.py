@@ -141,7 +141,7 @@ class HelloWorld(Resource):
 
         return response
     
-class CommunityReview(Resource):
+class CommunityReviewID(Resource):
     def get(self, review_id):
         # query db to display json info
         find_review = db.session.query(Review).filter_by(id=review_id).first()
@@ -398,9 +398,43 @@ class CommunityReview(Resource):
         })
         response.headers["Custom-Header"] = f"Review {review_id} updated successfully."
         return make_response(response, 200)
+    
+class FindAllCommunityReviews(Resource):
+    def get(self):
+        find_reviews = db.session.query(Review).all()
+        if not find_reviews:
+            abort(404, message="No reviews found.")
+        review_list = []
+        for review in find_reviews:
+            data = {
+                "id": review.id,
+                "status": 302,
+                "Address": {
+                    "id": review.address.id,
+                    "unique-address-id": review.address.address_uid,
+                    "Door": review.address.door_num,
+                    "Street": review.address.street,
+                    "Location": review.address.location,
+                    "Postcode": review.address.postcode},
+                "Review": {
+                    "id": review.id,
+                    "unique-review-id": review.review_uid,
+                    "Rating": review.rating,
+                    "Review": review.review,
+                    "Reviewee": review.type,
+                    "Timestamp": review.date,
+            }}
+            review_list.append(data)
+        response = jsonify({
+            "Reviews": review_list
+        })
+        response.headers["Custom-Header"] = "Display all reviews."
+        return make_response(response, 302)
+
 
 api.add_resource(HelloWorld, "/helloworld")
-api.add_resource(CommunityReview, "/review/<int:review_id>")
+api.add_resource(CommunityReviewID, "/review/<int:review_id>")
+api.add_resource(FindAllCommunityReviews, "/review/find/all")
 
 if __name__ == "__main__":
     app.run(debug=True)
@@ -427,3 +461,8 @@ if __name__ == "__main__":
 # 409 - already exists
 # 500 - internal server error
 # 501 - not implemented
+
+# review.address.door_num
+# review.address.street 
+# review.address.location 
+# review.address.postcode 

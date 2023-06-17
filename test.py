@@ -53,9 +53,9 @@ if response.status_code == 201:
     print(custom_header)
 else:
     print("Could not create review: ", response.status_code)
-input()
 
 # find reviews
+input()
 response = requests.get(BASE + "review/1")
 if response.status_code == 302:
     try:
@@ -77,9 +77,10 @@ if response.status_code == 302:
     print(response.json())
 else:
     print("Could not find review: ", response.status_code)
-input()
+
 
 # delete review via id
+input()
 response = requests.delete(BASE + "review/2")
 if response.status_code == 204:
     custom_header = response.headers.get("Custom-Header")
@@ -87,9 +88,9 @@ if response.status_code == 204:
     print(response)
 else:
     print("Could not delete review: ", response.status_code)
-input()
 
 # update review via id
+input()
 updated_review = {
     "rating": 5,
     "review": "this is an updated review",
@@ -103,9 +104,9 @@ if response.status_code == 200:
 else:
     print("Could not update review: ", response.status_code)
 
-# check if review has been updated
+# display all reviews
 input()
-response = requests.get(BASE + "review/1")
+response = requests.get(BASE + "review/find/all")
 if response.status_code == 302:
     try:
         data = response.json()
@@ -115,4 +116,4 @@ if response.status_code == 302:
         print("JSON decoding error:", str(e))
         print("Response content:", response.text)
 else:
-    print("Request failed with status code:", response.status_code)
+    print("Could not display all reviews:", response.status_code) 
