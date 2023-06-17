@@ -77,25 +77,13 @@ community_review_put_args.add_argument("postcode", type=str, help="A postocde is
 community_review_put_args.add_argument("rating", type=int, help="Please enter a value from 1 - 5", required=True)
 community_review_put_args.add_argument("review", type=str, help="Place your review here...")
 community_review_put_args.add_argument("reviewee", type=str, help="Enter one of the following: 'tenant', 'neighbour' or 'visitor'", required=True)
+
+community_review_update_args = reqparse.RequestParser()
+community_review_update_args.add_argument("rating", type=int, help="A rating is needed to update...")
+community_review_update_args.add_argument("review", type=str, help="A review is needed to update...")
+community_review_update_args.add_argument("reviewee", type=str, help="A reviewee is needed to update...")
 # validate api arguments - buisnesses
 # validate api arguments - incidents
-
-# serialize params for json object
-review_resource_fields = {
-    "review_id": fields.Integer,
-    "unique-address-id": fields.String,
-    "door_num": fields.String,
-    "street": fields.String,
-    "location": fields.String,
-    "postcode": fields.String,
-    "review_uid": fields.String,
-    "rating": fields.Integer,
-    "review": fields.String,
-    "type": fields.String,
-    "date": fields.DateTime,
-    "lon": fields.Integer,
-    "lat": fields.Integer
-}
 
 def abort_if_review_id_not_found(review_id):
     find_id = db.session.query(Review).filter_by(id=review_id).first()
@@ -154,7 +142,6 @@ class HelloWorld(Resource):
         return response
     
 class CommunityReview(Resource):
-    # @marshal_with(review_resource_fields)
     def get(self, review_id):
         # query db to display json info
         find_review = db.session.query(Review).filter_by(id=review_id).first()
@@ -186,7 +173,6 @@ class CommunityReview(Resource):
         response.headers["Custom-Header"] = f"Review {review_id} successfully found."
         return make_response(response, 302)
     
-    # @marshal_with(review_resource_fields)
     def put(self, review_id):
         abort_if_review_exists(review_id)
         args = community_review_put_args.parse_args()
@@ -326,10 +312,10 @@ class CommunityReview(Resource):
                         "Review": new_review_entry.review,
                         "Reviewee": new_review_entry.type,
                         "Timestamp": new_review_entry.date},
-                    "Map": {
-                        "id": new_map_entry.id,
-                        "Longitude": new_map_entry.lon,
-                        "Latitude": new_map_entry.lat},
+                    # "Map": {
+                    #     "id": new_map_entry.id,
+                    #     "Longitude": new_map_entry.lon,
+                    #     "Latitude": new_map_entry.lat},
                 })
                 response.headers["Custom-Header"] = f"Review {review_id} successfully created using new address & map coordinates."
                 return make_response(response, 201)
@@ -365,10 +351,10 @@ class CommunityReview(Resource):
                     "Review": new_review_entry.review,
                     "Reviewee": new_review_entry.type,
                     "Timestamp": new_review_entry.date},
-                "Map": {
-                    "id": new_map_entry.id,
-                    "Longitude": new_map_entry.lon,
-                    "Latitude": new_map_entry.lat},
+                # "Map": {
+                #     "id": new_map_entry.id,
+                #     "Longitude": new_map_entry.lon,
+                #     "Latitude": new_map_entry.lat},
             })
             response.headers["Custom-Header"] = f"Review {review_id} successfully created using existing address."
             return make_response(response, 201)
@@ -377,7 +363,7 @@ class CommunityReview(Resource):
     def delete(self, review_id):
         find_review = db.session.query(Review).filter_by(id=review_id).first()
         if not find_review:
-            abort(404, message="Review not found.")
+            abort(404, message="Review not ID found.")
         db.session.query(Review).filter_by(id=review_id).delete()
         db.session.commit()
         response = jsonify({
@@ -386,6 +372,32 @@ class CommunityReview(Resource):
         response.headers["Custom-Header"] = f"Review {review_id} permanently removed."
         return make_response(response, 204)
     
+
+    def patch(self, review_id):
+        # set update args
+        args = community_review_update_args.parse_args()
+        # find review id, if not abort
+        find_review = db.session.query(Review).filter_by(id=review_id).first()
+        if not find_review:
+            abort(404, message="Review ID not found.")
+        # get args and then update that to db instance of review id
+        if args["rating"]:
+            find_review.rating = args["rating"]
+        if args["review"]:
+            find_review.review = args["review"]
+        if args["reviewee"]:
+            find_review.type = args["reviewee"]
+        
+        # update timestamp to updated entry
+        find_review.date = datetime.now()
+        # db commit to update
+        db.session.commit()
+
+        response = jsonify({
+            "Review updated": 200
+        })
+        response.headers["Custom-Header"] = f"Review {review_id} updated successfully."
+        return make_response(response, 200)
 
 api.add_resource(HelloWorld, "/helloworld")
 api.add_resource(CommunityReview, "/review/<int:review_id>")
@@ -412,5 +424,6 @@ if __name__ == "__main__":
 # 403 - forbidden
 # 404 - not found
 # 405 - method not allowed
+# 409 - already exists
 # 500 - internal server error
 # 501 - not implemented

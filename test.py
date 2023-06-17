@@ -13,7 +13,7 @@ data1 = {
     "reviewee": "tenant"
 }
 
-# create data
+# create reviews
 response = requests.put(BASE + "review/1", json=data1)
 if response.status_code == 201:
     custom_header = response.headers.get("Custom-Header")
@@ -55,7 +55,7 @@ else:
     print("Could not create review: ", response.status_code)
 input()
 
-# find data
+# find reviews
 response = requests.get(BASE + "review/1")
 if response.status_code == 302:
     try:
@@ -79,6 +79,7 @@ else:
     print("Could not find review: ", response.status_code)
 input()
 
+# delete review via id
 response = requests.delete(BASE + "review/2")
 if response.status_code == 204:
     custom_header = response.headers.get("Custom-Header")
@@ -86,3 +87,32 @@ if response.status_code == 204:
     print(response)
 else:
     print("Could not delete review: ", response.status_code)
+input()
+
+# update review via id
+updated_review = {
+    "rating": 5,
+    "review": "this is an updated review",
+    "reviewee": "visitor"
+}
+response = requests.patch(BASE + "review/1", json=updated_review)
+if response.status_code == 200:
+    custom_header = response.headers.get("Custom-Header")
+    print(custom_header)
+    print(response.json())
+else:
+    print("Could not update review: ", response.status_code)
+
+# check if review has been updated
+input()
+response = requests.get(BASE + "review/1")
+if response.status_code == 302:
+    try:
+        data = response.json()
+        print(response.headers.get("Custom-Header"))
+        print(data)
+    except json.decoder.JSONDecodeError as e:
+        print("JSON decoding error:", str(e))
+        print("Response content:", response.text)
+else:
+    print("Request failed with status code:", response.status_code)
