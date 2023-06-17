@@ -2,8 +2,8 @@ import re
 import uuid
 import requests
 from datetime import datetime
-from flask import Flask, jsonify
-from flask_restful import Api, Resource, reqparse, abort
+from flask import Flask, jsonify, make_response
+from flask_restful import Api, Resource, reqparse, abort, fields, marshal_with
 from flask_sqlalchemy import SQLAlchemy
 
 
@@ -14,6 +14,7 @@ app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///reviewsapi.sqlite3"
 app.config["TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy()
+db.init_app(app)
 
 # one to one relationship
 class Address(db.Model):
@@ -21,7 +22,7 @@ class Address(db.Model):
     address_uid = db.Column(db.String, nullable=False)    # this is a uuid4 entry
     door_num = db.Column(db.String(35), nullable=False)
     street = db.Column(db.String(60), nullable=False)
-    location = db.Column(db.String(50), nullable=False)
+    location = db.Column(db.String(50), nullable=True)
     postcode = db.Column(db.String(10), nullable=False)
     geo_map = db.relationship('Maps', backref='location', uselist=False)
     reviews = db.relationship('Review', backref='address')
@@ -33,7 +34,7 @@ class Review(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     review_uid = db.Column(db.String, nullable=False)    # this is a uuid4 entry
     rating = db.Column(db.Integer, nullable=False)
-    review = db.Column(db.Text, nullable=False)
+    review = db.Column(db.Text, nullable=True)
     type = db.Column(db.String(20), nullable=False)
     date = db.Column(db.DateTime, nullable=False)
     address_id = db.Column(db.Integer, db.ForeignKey('address.id'))
@@ -64,7 +65,8 @@ class Incident(db.Model):
     address_id = db.Column(db.Integer, db.ForeignKey('address.id'))
 
 # create all db models
-db.create_all()
+with app.app_context():
+    db.create_all()
 
 # validate api arguments - reviews
 community_review_put_args = reqparse.RequestParser()
@@ -78,12 +80,27 @@ community_review_put_args.add_argument("reviewee", type=str, help="Enter one of 
 # validate api arguments - buisnesses
 # validate api arguments - incidents
 
-reviews = {}
+# serialize params for json object
+review_resource_fields = {
+    "review_id": fields.Integer,
+    "unique-address-id": fields.String,
+    "door_num": fields.String,
+    "street": fields.String,
+    "location": fields.String,
+    "postcode": fields.String,
+    "review_uid": fields.String,
+    "rating": fields.Integer,
+    "review": fields.String,
+    "type": fields.String,
+    "date": fields.DateTime,
+    "lon": fields.Integer,
+    "lat": fields.Integer
+}
 
 def abort_if_review_id_not_found(review_id):
     find_id = db.session.query(Review).filter_by(id=review_id).first()
     if not find_id:
-        abort(404, message="Could not find review")
+        abort(404, message="Review not found.")
 
 def abort_if_review_exists(review_id):
     find_id = db.session.query(Review).filter_by(id=review_id).first()
@@ -137,25 +154,53 @@ class HelloWorld(Resource):
         return response
     
 class CommunityReview(Resource):
+    # @marshal_with(review_resource_fields)
     def get(self, review_id):
-        abort_if_review_id_not_found(review_id)
         # query db to display json info
-        return reviews[review_id]
+        find_review = db.session.query(Review).filter_by(id=review_id).first()
+        if not find_review:
+            return abort(404, message="Review not found")
+        response = {
+            "review_id": find_review.id,
+            "status": 302,
+            "Address": {
+                "id": find_review.address.id,
+                "unique-address-id": find_review.address.address_uid,
+                "Door": find_review.address.door_num,
+                "Street": find_review.address.street,
+                "Location": find_review.address.location,
+                "Postcode": find_review.address.postcode},
+            "Review": {
+                "id": find_review.id,
+                "unique-review-id": find_review.review_uid,
+                "Rating": find_review.rating,
+                "Review": find_review.review,
+                "Reviewee": find_review.type,
+                "Timestamp": find_review.date},
+            # "Map": {
+            #     "id": find_review.location.id,
+            #     "Longitude": find_review.location.lon,
+            #     "Latitude": find_review.location.lat},
+        }
+        response = jsonify(response)
+        response.headers["Custom-Header"] = "Review successfully found."
+        return make_response(response, 302)
     
+    # @marshal_with(review_resource_fields)
     def put(self, review_id):
         abort_if_review_exists(review_id)
         args = community_review_put_args.parse_args()
         # get values from args.get("...")
         address_uuid = str(uuid.uuid4())
         review_uuid = str(uuid.uuid4())
-        door = args.get("door").lower()
+        door = args.get("door")
         street = args.get("street").lower()
-        location = args.get("location").lower()
+        location = args.get("location")
         postcode = args.get("postcode").lower()
         rating = args.get("rating")
         review = args.get("review")
         reviewee = args.get("reviewee").lower()
-        abort_if_not_uk_postcode(postcode)
+        # abort_if_not_uk_postcode(postcode)
         abort_if_incorrect_reviewee(reviewee)
         # validate door requ1111est - check if one already exists
         validate_door = validate_door_request(door)
@@ -166,14 +211,16 @@ class CommunityReview(Resource):
         map_response = requests.get(f"{OPENSTREETMAP_URL}&postalcode={postcode}&country=united kingdom")
         map_data = map_response.json()
         # abort if no coordinates found with postcode
-        abort_if_map_data_not_found(map_data)
+        if not map_data:
+            abort_if_map_data_not_found(map_data)
+        
         # if postcode is false, create an address entry
         if validate_postcode == False:
             # if coodinates exist create address, review & map entries
             if map_data:
                 new_address_entry = Address(
                     address_uid=address_uuid,
-                    door=door,
+                    door_num=door,
                     street=street,
                     location=location,
                     postcode=postcode
@@ -196,12 +243,12 @@ class CommunityReview(Resource):
                     review=review,
                     type=reviewee,
                     date=datetime.now(),
-                    address=new_review_entry
+                    address=new_address_entry
                 )
                 db.session.add(new_review_entry)
                 db.session.commit()
                 # return data as json object.
-                response = jsonify({
+                response = {
                     "id": new_review_entry.id,
                     "status": 201,
                     "Address": {
@@ -222,18 +269,19 @@ class CommunityReview(Resource):
                         "id": new_map_entry.id,
                         "Longitude": new_map_entry.lon,
                         "Latitude": new_map_entry.lat},
-                })
-                response.header["Custom-Header"] = "New address, review & map coordinates created successfully."
-                return response, 201
+                }
+                response = jsonify(response)
+                response.headers["Custom-Header"] = "New address, review & map coordinates created successfully."
+                return make_response(response, 201)
             else:
                 abort_if_bad_request()  
         # if postcode matches but diff door number - create new address, review, map
-        if (validate_door == False) and validate_postcode == True:
+        elif (validate_door == False) and validate_postcode == True:
             # if coodinates exist create address, review & map entries
             if map_data:
                 new_address_entry = Address(
                     address_uid=address_uuid,
-                    door=door,
+                    door_num=door,
                     street=street,
                     location=location,
                     postcode=postcode
@@ -256,7 +304,7 @@ class CommunityReview(Resource):
                     review=review,
                     type=reviewee,
                     date=datetime.now(),
-                    address=new_review_entry
+                    address=new_address_entry
                 )
                 db.session.add(new_review_entry)
                 db.session.commit()
@@ -283,10 +331,10 @@ class CommunityReview(Resource):
                         "Longitude": new_map_entry.lon,
                         "Latitude": new_map_entry.lat},
                 })
-                response.header["Custom-Header"] = "New address, review & map coordinates created successfully."
-                return response, 201
+                response.headers["Custom-Header"] = "New address, review & map coordinates created successfully."
+                return make_response(response, 201)
         # if door & postcode match - create review from existing address db (query db and link address id to new review foreign key)
-        if (validate_door == True) and validate_postcode == True:
+        elif (validate_door == True) and validate_postcode == True:
             # get db object of matching address
             find_address = db.session.query(Address).filter_by(door_num=door, postcode=postcode).first()
             # create a new review
@@ -296,7 +344,7 @@ class CommunityReview(Resource):
                 review=review,
                 type=reviewee,
                 date=datetime.now(),
-                address=new_review_entry
+                address=new_address_entry
             )
             db.session.add(new_review_entry)
             db.session.commit()
@@ -322,8 +370,8 @@ class CommunityReview(Resource):
                     "Longitude": new_map_entry.lon,
                     "Latitude": new_map_entry.lat},
             })
-            response.header["Custom-Header"] = "New review successfully created using existing address."
-            return response, 201
+            response.headers["Custom-Header"] = "New review successfully created using existing address."
+            return make_response(response, 201)
 
     
     def delete(self, review_id):
@@ -337,3 +385,25 @@ api.add_resource(CommunityReview, "/review/<int:review_id>")
 
 if __name__ == "__main__":
     app.run(debug=True)
+
+
+
+
+# status codes
+# 200 - ok
+# 201 - created
+# 202 - accepted
+# 204 - no content
+# 301 - moved permanently
+# 302 - found
+# 304 - not modified
+# 307 - temporary redirect (same as 302)
+# 308 - permanent redirect (same as 301)
+
+# 400 - bad request
+# 401 - unauthorized
+# 403 - forbidden
+# 404 - not found
+# 405 - method not allowed
+# 500 - internal server error
+# 501 - not implemented

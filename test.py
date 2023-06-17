@@ -1,4 +1,5 @@
 import requests
+import json
 
 BASE = "http://127.0.0.1:5000/"
 
@@ -14,7 +15,12 @@ data1 = {
 
 # create data
 response = requests.put(BASE + "review/1", json=data1)
-print("review 1 created")
+if response.status_code == 201:
+    custom_header = response.headers.get("Custom-Header")
+    print("review 1 created")
+    print(custom_header)
+else:
+    print("Could not create review: ", response.status_code)
 input()
 
 data2 = {
@@ -27,8 +33,12 @@ data2 = {
     "reviewee": "visitor"
 }
 response = requests.put(BASE + "review/2", json=data2)
-print("review 2 created")
-
+if response.status_code == 201:
+    custom_header = response.headers.get("Custom-Header")
+    print("review 2 created")
+    print(custom_header)
+else:
+    print("Could not create review: ", response.status_code)
 input()
 
 data3 = {
@@ -40,21 +50,37 @@ data3 = {
     "reviewee": "neighbour"
 }
 response = requests.put(BASE + "review/3", json=data3)
-print("review 3 created")
-
+if response.status_code == 201:
+    custom_header = response.headers.get("Custom-Header")
+    print("review 3 created")
+    print(custom_header)
+else:
+    print("Could not create review: ", response.status_code)
 input()
 
 # find data
 response = requests.get(BASE + "review/1")
-print("review 1 found.")
-print(response.json())
+if response.status_code == 302:
+    try:
+        data = response.json()
+        print(response.headers.get("Custom-Header"))
+        print(data)
+    except json.decoder.JSONDecodeError as e:
+        print("JSON decoding error:", str(e))
+        print("Response content:", response.text)
+else:
+    print("Request failed with status code:", response.status_code)
 
 input()
 
 response = requests.get(BASE + "review/3")
-print("review 3 found.")
-print(response.json())
-
+if response.status_code == 302:
+    custom_header = response.headers.get("Custom-Header")
+    print("review 3 found.")
+    print(custom_header)
+    print(response.json())
+else:
+    print("Could not find review: ", response.status_code)
 input()
 
 response = requests.delete(BASE + "review/2")
