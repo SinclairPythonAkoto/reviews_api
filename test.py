@@ -17,7 +17,6 @@ data1 = {
 response = requests.put(BASE + "review/1", json=data1)
 if response.status_code == 201:
     custom_header = response.headers.get("Custom-Header")
-    print("review 1 created")
     print(custom_header)
 else:
     print("Could not create review: ", response.status_code)
@@ -35,7 +34,6 @@ data2 = {
 response = requests.put(BASE + "review/2", json=data2)
 if response.status_code == 201:
     custom_header = response.headers.get("Custom-Header")
-    print("review 2 created")
     print(custom_header)
 else:
     print("Could not create review: ", response.status_code)
@@ -52,7 +50,6 @@ data3 = {
 response = requests.put(BASE + "review/3", json=data3)
 if response.status_code == 201:
     custom_header = response.headers.get("Custom-Header")
-    print("review 3 created")
     print(custom_header)
 else:
     print("Could not create review: ", response.status_code)
@@ -76,7 +73,6 @@ input()
 response = requests.get(BASE + "review/3")
 if response.status_code == 302:
     custom_header = response.headers.get("Custom-Header")
-    print("review 3 found.")
     print(custom_header)
     print(response.json())
 else:
@@ -84,5 +80,9 @@ else:
 input()
 
 response = requests.delete(BASE + "review/2")
-print("review 2 deleted")
-print(response)
+if response.status_code == 204:
+    custom_header = response.headers.get("Custom-Header")
+    print(custom_header)
+    print(response)
+else:
+    print("Could not delete review: ", response.status_code)

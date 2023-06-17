@@ -183,7 +183,7 @@ class CommunityReview(Resource):
             #     "Latitude": find_review.location.lat},
         }
         response = jsonify(response)
-        response.headers["Custom-Header"] = "Review successfully found."
+        response.headers["Custom-Header"] = f"Review {review_id} successfully found."
         return make_response(response, 302)
     
     # @marshal_with(review_resource_fields)
@@ -271,7 +271,7 @@ class CommunityReview(Resource):
                         "Latitude": new_map_entry.lat},
                 }
                 response = jsonify(response)
-                response.headers["Custom-Header"] = "New address, review & map coordinates created successfully."
+                response.headers["Custom-Header"] = f"Review {review_id} successfully created using new address & map coordinates."
                 return make_response(response, 201)
             else:
                 abort_if_bad_request()  
@@ -331,7 +331,7 @@ class CommunityReview(Resource):
                         "Longitude": new_map_entry.lon,
                         "Latitude": new_map_entry.lat},
                 })
-                response.headers["Custom-Header"] = "New address, review & map coordinates created successfully."
+                response.headers["Custom-Header"] = f"Review {review_id} successfully created using new address & map coordinates."
                 return make_response(response, 201)
         # if door & postcode match - create review from existing address db (query db and link address id to new review foreign key)
         elif (validate_door == True) and validate_postcode == True:
@@ -370,14 +370,21 @@ class CommunityReview(Resource):
                     "Longitude": new_map_entry.lon,
                     "Latitude": new_map_entry.lat},
             })
-            response.headers["Custom-Header"] = "New review successfully created using existing address."
+            response.headers["Custom-Header"] = f"Review {review_id} successfully created using existing address."
             return make_response(response, 201)
 
     
     def delete(self, review_id):
-        abort_if_review_id_not_found(review_id)
-        del reviews[review_id]
-        return '', 204
+        find_review = db.session.query(Review).filter_by(id=review_id).first()
+        if not find_review:
+            abort(404, message="Review not found.")
+        db.session.query(Review).filter_by(id=review_id).delete()
+        db.session.commit()
+        response = jsonify({
+            "Review deleted": 204
+        })
+        response.headers["Custom-Header"] = f"Review {review_id} permanently removed."
+        return make_response(response, 204)
     
 
 api.add_resource(HelloWorld, "/helloworld")
