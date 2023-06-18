@@ -117,3 +117,27 @@ if response.status_code == 302:
         print("Response content:", response.text)
 else:
     print("Could not display all reviews:", response.status_code) 
+
+
+# create new review (without ID)
+input()
+review_data = {
+    "door": "42",
+    "street": "Arden road",
+    "location": "Crawley",
+    "postcode": "RH10 6HL",
+    "rating": 2,
+    "review": "this is a bad comment",
+    "reviewee": "tenant"
+}
+response = requests.put(BASE + "review/create", json=review_data)
+if response.status_code == 201:
+    try:
+        data = response.json()
+        print(response.headers.get("Custom-Header"))
+        print(data)
+    except json.decoder.JSONDecodeError as e:
+        print("JSON decoding error:", str(e))
+        print("Response content:", response.text)
+else:
+    print("Could not create new review:", response.status_code) 
