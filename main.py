@@ -120,6 +120,15 @@ create_review_put_args.add_argument("postcode", type=str, help="A postocde is re
 create_review_put_args.add_argument("rating", type=int, help="Please enter a value from 1 - 5", required=True)
 create_review_put_args.add_argument("review", type=str, help="Place your review here...")
 create_review_put_args.add_argument("reviewee", type=str, help="Enter one of the following: 'tenant', 'neighbour' or 'visitor'", required=True)
+
+community_review_uid_update_args = reqparse.RequestParser()
+community_review_uid_update_args.add_argument("door", type=str, help="A door number is required...")
+community_review_uid_update_args.add_argument("street", type=str, help="A street name is required...")
+community_review_uid_update_args.add_argument("location", type=str, help="Place a town or city here...")
+community_review_uid_update_args.add_argument("postcode", type=str, help="A postocde is required...")
+community_review_uid_update_args.add_argument("rating", type=int, help="Please enter a value from 1 - 5")
+community_review_uid_update_args.add_argument("review", type=str, help="Place your review here...")
+community_review_uid_update_args.add_argument("reviewee", type=str, help="Enter one of the following: 'tenant', 'neighbour' or 'visitor'")
 # validate api arguments - buisnesses
 # validate api arguments - incidents
 
@@ -438,7 +447,7 @@ class CommunityReviewID(Resource):
     def delete(self, review_id):
         find_review = db.session.query(Review).filter_by(id=review_id).first()
         if not find_review:
-            abort(404, message="Review not ID found.")
+            abort(404, message="Review ID not found.")
         db.session.query(Review).filter_by(id=review_id).delete()
         db.session.commit()
         response = jsonify({"Review deleted": 204})
@@ -740,11 +749,37 @@ class CommunityReviewUID(Resource):
 
 # update review using review_uid
     def patch(self, review_uid):
-        pass
+        args = community_review_uid_update_args.parse_args()
+        find_review = db.session.query(Review).filter_by(review_uid=review_uid).first()
+        if not find_review:
+            abort(404, message="Review not found.")
+        # get args and then update that to db instance of review id
+        if args["rating"]:
+            find_review.rating = args["rating"]
+        if args["review"]:
+            find_review.review = args["review"]
+        if args["reviewee"]:
+            find_review.type = args["reviewee"]
+
+        # update timestamp to updated entry
+        find_review.date = datetime.now()
+        # db commit to update
+        db.session.commit()
+
+        response = jsonify({"Review updated": 200})
+        response.headers["Custom-Header"] = f"Review {review_uid} updated successfully."
+        return make_response(response, 200)
 
 # delete review using review_uid
     def delete(self, review_uid):
-        pass
+        find_review = db.session.query(Review).filter_by(review_uid=review_uid).first()
+        if not find_review:
+            abort(404, message="Review ID not found")
+        db.session.query(Review).filter_by(review_uid=review_uid).delete()
+        db.session.commit()
+        response = jsonify({"Review deleted": 204})
+        response.headers["Custom-Header"] = f"Review {review_uid} permanently removed."
+        return make_response(response, 204)
     
 # filter reviews by door number
 # filter reviews by street name

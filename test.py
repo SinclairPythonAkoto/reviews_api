@@ -142,9 +142,9 @@ if response.status_code == 201:
 else:
     print("Could not create new review:", response.status_code) 
 
-# find review using review_UID
+# find review using review_uid
 input()
-review_uid = "d1d3e6e3-6f8e-436a-994b-2e6ec0098bfd"
+review_uid = "d1d3e6e3-6f8e-436a-994b-2e6ec0098bfd"    # uid from review 4
 response = requests.get(BASE + f"review/{review_uid}")
 if response.status_code == 302:
     try:
@@ -156,3 +156,46 @@ if response.status_code == 302:
         print("Response content:", response.text)
 else:
     print("Could not find reviews with review unique ID:", response.status_code)
+
+
+# update review using review_uid
+input()
+review_update = {
+    "rating": 4,
+    "review": "this is an updated good review ",
+    "reviewee": "visitor"
+}
+response = requests.patch(BASE + f"review/{review_uid}", json=review_update)
+if response.status_code == 200:
+    try:
+        data = response.json()
+        print(response.headers.get("Custom-Header"))
+        print(data)
+    except json.decoder.JSONDecodeError as e:
+        print("JSON decoding error:", str(e))
+        print("Response content:", response.text)
+else:
+    print("Could not update review with review unique ID given:", response.status_code)
+
+
+input()
+response = requests.get(BASE + "review/find/all")
+if response.status_code == 302:
+    try:
+        data = response.json()
+        print(response.headers.get("Custom-Header"))
+        print(data)
+    except json.decoder.JSONDecodeError as e:
+        print("JSON decoding error:", str(e))
+        print("Response content:", response.text)
+else:
+    print("Could not display all reviews:", response.status_code) 
+
+# delete review via review_uid
+input()
+response = requests.delete(BASE + f"review/{review_uid}")
+if response.status_code == 204:
+    custom_header = response.headers.get("Custom-Header")
+    print(custom_header)
+else:
+    print("Could not delete review with unique ID given: ", response.status_code)
