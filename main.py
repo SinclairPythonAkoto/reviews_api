@@ -201,7 +201,7 @@ class CommunityReviewID(Resource):
         # query db to display json info
         find_review = db.session.query(Review).filter_by(id=review_id).first()
         if not find_review:
-            return abort(404, message="Review not found")
+            abort(404, message="Review not found")
         response = {
             "review_id": find_review.id,
             "status": 302,
@@ -709,8 +709,43 @@ class CreateReview(Resource):
             return make_response(response, 201)
 
 # find review using review_uid
+class CommunityReviewUID(Resource):
+    def get(self, review_uid):
+        find_review = db.session.query(Review).filter_by(review_uid=review_uid).first()
+        if not find_review:
+            abort(404, message="Review not found.")
+        response = {
+            "review_id": find_review.id,
+            "status": 302,
+            "Address": {
+                "id": find_review.address.id,
+                "unique-address-id": find_review.address.address_uid,
+                "Door": find_review.address.door_num,
+                "Street": find_review.address.street,
+                "Location": find_review.address.location,
+                "Postcode": find_review.address.postcode,
+            },
+            "Review": {
+                "id": find_review.id,
+                "unique-review-id": find_review.review_uid,
+                "Rating": find_review.rating,
+                "Review": find_review.review,
+                "Reviewee": find_review.type,
+                "Timestamp": find_review.date,
+            }
+        }
+        response = jsonify(response)
+        response.headers["Custom-Header"] = f"Review {review_uid} successfully found."
+        return make_response(response, 302)
+
 # update review using review_uid
+    def patch(self, review_uid):
+        pass
+
 # delete review using review_uid
+    def delete(self, review_uid):
+        pass
+    
 # filter reviews by door number
 # filter reviews by street name
 # filter reviews by location
@@ -722,6 +757,7 @@ api.add_resource(HelloWorld, "/helloworld")
 api.add_resource(CommunityReviewID, "/review/<int:review_id>")
 api.add_resource(FindAllCommunityReviews, "/review/find/all")
 api.add_resource(CreateReview, "/review/create")
+api.add_resource(CommunityReviewUID, "/review/<string:review_uid>")
 
 if __name__ == "__main__":
     app.run(debug=True)

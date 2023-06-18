@@ -141,3 +141,18 @@ if response.status_code == 201:
         print("Response content:", response.text)
 else:
     print("Could not create new review:", response.status_code) 
+
+# find review using review_UID
+input()
+review_uid = "d1d3e6e3-6f8e-436a-994b-2e6ec0098bfd"
+response = requests.get(BASE + f"review/{review_uid}")
+if response.status_code == 302:
+    try:
+        data = response.json()
+        print(response.headers.get("Custom-Header"))
+        print(data)
+    except json.decoder.JSONDecodeError as e:
+        print("JSON decoding error:", str(e))
+        print("Response content:", response.text)
+else:
+    print("Could not find reviews with review unique ID:", response.status_code)
