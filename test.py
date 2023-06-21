@@ -79,7 +79,7 @@ else:
     print("Could not find review: ", response.status_code)
 
 
-# delete review via id
+# delete review 2 via id
 input()
 response = requests.delete(BASE + "review/2")
 if response.status_code == 204:
@@ -89,7 +89,7 @@ if response.status_code == 204:
 else:
     print("Could not delete review: ", response.status_code)
 
-# update review via id
+# update review 1 via id
 input()
 updated_review = {
     "rating": 5,
@@ -144,7 +144,7 @@ else:
 
 # find review using review_uid
 input()
-review_uid = "d1d3e6e3-6f8e-436a-994b-2e6ec0098bfd"    # uid from review 4
+review_uid = "5678aed5-99da-4cea-bce7-1dabbd4aed38"    # uid from review 4
 response = requests.get(BASE + f"review/{review_uid}")
 if response.status_code == 302:
     try:
@@ -178,6 +178,7 @@ else:
     print("Could not update review with review unique ID given:", response.status_code)
 
 
+# check data
 input()
 response = requests.get(BASE + "review/find/all")
 if response.status_code == 302:
@@ -199,3 +200,33 @@ if response.status_code == 204:
     print(custom_header)
 else:
     print("Could not delete review with unique ID given: ", response.status_code)
+
+# find review via door number
+input()
+door = "39"
+response = requests.get(BASE + f"review/filter/door/{door}")
+if response.status_code == 302:
+    try:
+        data = response.json()
+        print(response.headers.get("Custom-Header"))
+        print(data)
+    except json.decoder.JSONDecodeError as e:
+        print("JSON decoding error:", str(e))
+        print("Response content:", response.text)
+else:
+    print("Could not find review:", response.status_code)
+
+# find review via street name
+input()
+street = "Winning Hill Close"
+response = requests.get(BASE + f"review/filter/street/{street}")
+if response.status_code == 302:
+    try:
+        data = response.json()
+        print(response.headers.get("Custom-Header"))
+        print(data)
+    except json.decoder.JSONDecodeError as e:
+        print("JSON decoding error:", str(e))
+        print("Response content:", response.text)
+else:
+    print("Could not find review:", response.status_code)

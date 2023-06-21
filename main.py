@@ -782,10 +782,90 @@ class CommunityReviewUID(Resource):
         return make_response(response, 204)
     
 # filter reviews by door number
+class FilterReviewByDoor(Resource):
+    def get(self, door):
+        review_list = []
+        find_review = db.session.query(Address).filter_by(door_num=door).first()
+        if not find_review:
+            abort(404, message="Could not find review.")
+        get_reviews = db.session.query(Review).all() 
+        for review in get_reviews:
+            if door == review.address.door_num:
+                data = {
+                    "review_id": review.id,
+                    "status": 302,
+                    "Address": {
+                        "id": review.address.id,
+                        "unique-address-id": review.address.address_uid,
+                        "Door": review.address.door_num,
+                        "Street": review.address.street,
+                        "Location": review.address.location,
+                        "Postcode": review.address.postcode,
+                    },
+                    "Review": {
+                        "id": review.id,
+                        "unique-review-id": review.review_uid,
+                        "Rating": review.rating,
+                        "Review": review.review,
+                        "Reviewee": review.type,
+                        "Timestamp": review.date,
+                    }
+                }
+                review_list.append(data)
+        response = jsonify({"Filtered Reviews": review_list})
+        response.headers["Custom-Header"] = f"Display all reviews with matching door number: {door}."
+        return make_response(response, 302)
+
+        
 # filter reviews by street name
+class FilterReviewByStreet(Resource):
+    def get(self, street):
+        review_list = []
+        find_review = db.session.query(Address).filter_by(street=street.lower()).first()
+        if not find_review:
+            abort(404, message="Could not find review.")
+        get_reviews = db.session.query(Review).all()
+        for review in get_reviews:
+            if street.lower() == review.address.street.lower():
+                data = {
+                    "review_id": review.id,
+                    "status": 302,
+                    "Address": {
+                        "id": review.address.id,
+                        "unique-address-id": review.address.address_uid,
+                        "Door": review.address.door_num,
+                        "Street": review.address.street,
+                        "Location": review.address.location,
+                        "Postcode": review.address.postcode,
+                    },
+                    "Review": {
+                        "id": review.id,
+                        "unique-review-id": review.review_uid,
+                        "Rating": review.rating,
+                        "Review": review.review,
+                        "Reviewee": review.type,
+                        "Timestamp": review.date,
+                    }
+                }
+                review_list.append(data)
+        response = jsonify({"Filtered Reviews": review_list})
+        response.headers["Custom-Header"] = f"Display all reviews with matching street name: {street}."
+        return make_response(response, 302)
+
 # filter reviews by location
+class FilterReviewByLocation(Resource):
+    def get(self, location):
+        pass
+
 # filter reviews by postcode
+class FilterReviewByPostcode(Resource):
+    def get(self, postcode):
+        pass
+
 # filter reviews by rating
+class FilterReviewByRating(Resource):
+    def get(self, rating):
+        pass
 
 
 api.add_resource(HelloWorld, "/helloworld")
@@ -793,6 +873,11 @@ api.add_resource(CommunityReviewID, "/review/<int:review_id>")
 api.add_resource(FindAllCommunityReviews, "/review/find/all")
 api.add_resource(CreateReview, "/review/create")
 api.add_resource(CommunityReviewUID, "/review/<string:review_uid>")
+api.add_resource(FilterReviewByDoor, "/review/filter/door/<string:door>")
+api.add_resource(FilterReviewByStreet, "/review/filter/street/<string:street>")
+api.add_resource(FilterReviewByLocation,)
+api.add_resource(FilterReviewByLocation,)
+api.add_resource(FilterReviewByLocation,)
 
 if __name__ == "__main__":
     app.run(debug=True)
