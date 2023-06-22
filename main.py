@@ -40,6 +40,7 @@ class Review(db.Model):
     type = db.Column(db.String(20), nullable=False)
     date = db.Column(db.DateTime, nullable=False)
     address_id = db.Column(db.Integer, db.ForeignKey("address.id"))
+    map_id = db.Column(db.Integer, db.ForeignKey("maps.id"))
 
 
 # one to one relationship
@@ -48,6 +49,7 @@ class Maps(db.Model):
     lon = db.Column(db.String(15), nullable=False)
     lat = db.Column(db.String(15), nullable=False)
     address_id = db.Column(db.Integer, db.ForeignKey("address.id"))
+    reviews = db.relationship("Review", backref="coordinates")
 
 
 # one to many relationship
@@ -230,10 +232,10 @@ class CommunityReviewID(Resource):
                 "Reviewee": find_review.type,
                 "Timestamp": find_review.date,
             },
-            # "Map": {
-            #     "id": find_review.location.id,
-            #     "Longitude": find_review.location.lon,
-            #     "Latitude": find_review.location.lat},
+            "Map": {
+                "id": find_review.coordinates.id,
+                "Longitude": find_review.coordinates.lon,
+                "Latitude": find_review.coordinates.lat},
         }
         response = jsonify(response)
         response.headers["Custom-Header"] = f"Review {review_id} successfully found."
@@ -296,6 +298,7 @@ class CommunityReviewID(Resource):
                     type=reviewee,
                     date=datetime.now(),
                     address=new_address_entry,
+                    coordinates=new_map_entry,
                 )
                 db.session.add(new_review_entry)
                 db.session.commit()
@@ -360,6 +363,7 @@ class CommunityReviewID(Resource):
                     type=reviewee,
                     date=datetime.now(),
                     address=new_address_entry,
+                    coordinates=new_map_entry,
                 )
                 db.session.add(new_review_entry)
                 db.session.commit()
@@ -384,10 +388,11 @@ class CommunityReviewID(Resource):
                             "Reviewee": new_review_entry.type,
                             "Timestamp": new_review_entry.date,
                         },
-                        # "Map": {
-                        #     "id": new_map_entry.id,
-                        #     "Longitude": new_map_entry.lon,
-                        #     "Latitude": new_map_entry.lat},
+                        "Map": {
+                            "id": new_map_entry.id,
+                            "Longitude": new_map_entry.lon,
+                            "Latitude": new_map_entry.lat
+                        },
                     }
                 )
                 response.headers[
@@ -410,6 +415,7 @@ class CommunityReviewID(Resource):
                 type=reviewee,
                 date=datetime.now(),
                 address=new_address_entry,
+                coordinates=new_map_entry,
             )
             db.session.add(new_review_entry)
             db.session.commit()
@@ -433,10 +439,11 @@ class CommunityReviewID(Resource):
                         "Reviewee": new_review_entry.type,
                         "Timestamp": new_review_entry.date,
                     },
-                    # "Map": {
-                    #     "id": new_map_entry.id,
-                    #     "Longitude": new_map_entry.lon,
-                    #     "Latitude": new_map_entry.lat},
+                    "Map": {
+                        "id": new_map_entry.id,
+                        "Longitude": new_map_entry.lon,
+                        "Latitude": new_map_entry.lat
+                    },
                 }
             )
             response.headers[
@@ -505,6 +512,11 @@ class FindAllCommunityReviews(Resource):
                     "Reviewee": review.type,
                     "Timestamp": review.date,
                 },
+                "Map": {
+                "id": review.coordinates.id,
+                "Longitude": review.coordinates.lon,
+                "Latitude": review.coordinates.lat
+                },
             }
             review_list.append(data)
         response = jsonify({"Reviews": review_list})
@@ -568,6 +580,7 @@ class CreateReview(Resource):
                     type=reviewee,
                     date=datetime.now(),
                     address=new_address_entry,
+                    coordinates=new_map_entry,
                 )
                 db.session.add(new_review_entry)
                 db.session.commit()
@@ -632,6 +645,7 @@ class CreateReview(Resource):
                     type=reviewee,
                     date=datetime.now(),
                     address=new_address_entry,
+                    coordinates=new_map_entry,
                 )
                 db.session.add(new_review_entry)
                 db.session.commit()
@@ -656,10 +670,11 @@ class CreateReview(Resource):
                             "Reviewee": new_review_entry.type,
                             "Timestamp": new_review_entry.date,
                         },
-                        # "Map": {
-                        #     "id": new_map_entry.id,
-                        #     "Longitude": new_map_entry.lon,
-                        #     "Latitude": new_map_entry.lat},
+                        "Map": {
+                            "id": new_map_entry.id,
+                            "Longitude": new_map_entry.lon,
+                            "Latitude": new_map_entry.lat
+                        },
                     }
                 )
                 response.headers[
@@ -682,6 +697,7 @@ class CreateReview(Resource):
                 type=reviewee,
                 date=datetime.now(),
                 address=new_address_entry,
+                coordinates=new_map_entry,
             )
             db.session.add(new_review_entry)
             db.session.commit()
@@ -705,10 +721,11 @@ class CreateReview(Resource):
                         "Reviewee": new_review_entry.type,
                         "Timestamp": new_review_entry.date,
                     },
-                    # "Map": {
-                    #     "id": new_map_entry.id,
-                    #     "Longitude": new_map_entry.lon,
-                    #     "Latitude": new_map_entry.lat},
+                    "Map": {
+                        "id": new_map_entry.id,
+                        "Longitude": new_map_entry.lon,
+                        "Latitude": new_map_entry.lat
+                    },
                 }
             )
             response.headers[
@@ -740,7 +757,12 @@ class CommunityReviewUID(Resource):
                 "Review": find_review.review,
                 "Reviewee": find_review.type,
                 "Timestamp": find_review.date,
-            }
+            },
+            "Map": {
+                "id": find_review.coordinates.id,
+                "Longitude": find_review.coordinates.lon,
+                "Latitude": find_review.coordinates.lat
+            },
         }
         response = jsonify(response)
         response.headers["Custom-Header"] = f"Review {review_uid} successfully found."
@@ -808,7 +830,12 @@ class FilterReviewByDoor(Resource):
                         "Review": review.review,
                         "Reviewee": review.type,
                         "Timestamp": review.date,
-                    }
+                    },
+                    "Map": {
+                        "id": review.coordinates.id,
+                        "Longitude": review.coordinates.lon,
+                        "Latitude": review.coordinates.lat
+                    }, 
                 }
                 review_list.append(data)
         response = jsonify({"Filtered Reviews": review_list})
@@ -844,7 +871,12 @@ class FilterReviewByStreet(Resource):
                         "Review": review.review,
                         "Reviewee": review.type,
                         "Timestamp": review.date,
-                    }
+                    },
+                    "Map": {
+                        "id": review.coordinates.id,
+                        "Longitude": review.coordinates.lon,
+                        "Latitude": review.coordinates.lat
+                    },
                 }
                 review_list.append(data)
         response = jsonify({"Filtered Reviews": review_list})
@@ -880,7 +912,12 @@ class FilterReviewByLocation(Resource):
                         "Review": review.review,
                         "Reviewee": review.type,
                         "Timestamp": review.date,
-                    }
+                    },
+                    "Map": {
+                        "id": review.coordinates.id,
+                        "Longitude": review.coordinates.lon,
+                        "Latitude": review.coordinates.lat
+                    },
                 }
                 review_list.append(data)
         response = jsonify({"Filtered Reviews": review_list})
@@ -916,7 +953,12 @@ class FilterReviewByPostcode(Resource):
                         "Review": review.review,
                         "Reviewee": review.type,
                         "Timestamp": review.date,
-                    }
+                    },
+                    "Map": {
+                        "id": review.coordinates.id,
+                        "Longitude": review.coordinates.lon,
+                        "Latitude": review.coordinates.lat
+                    },
                 }
                 review_list.append(data)
         response = jsonify({"Filtered Reviews": review_list})
@@ -952,7 +994,12 @@ class FilterReviewByRating(Resource):
                         "Review": review.review,
                         "Reviewee": review.type,
                         "Timestamp": review.date,
-                    }
+                    },
+                    "Map": {
+                        "id": review.coordinates.id,
+                        "Longitude": review.coordinates.lon,
+                        "Latitude": review.coordinates.lat
+                    },
                 }
                 review_list.append(data)
         response = jsonify({"Filtered Reviews": review_list})
@@ -988,7 +1035,12 @@ class FilterReviewByTenant(Resource):
                         "Review": review.review,
                         "Reviewee": review.type,
                         "Timestamp": review.date,
-                    }
+                    },
+                    "Map": {
+                        "id": review.coordinates.id,
+                        "Longitude": review.coordinates.lon,
+                        "Latitude": review.coordinates.lat
+                    },
                 }
                 review_list.append(data)
         response = jsonify({"Filtered Reviews": review_list})
@@ -1024,7 +1076,12 @@ class FilterReviewByVisitor(Resource):
                         "Review": review.review,
                         "Reviewee": review.type,
                         "Timestamp": review.date,
-                    }
+                    },
+                    "Map": {
+                        "id": review.coordinates.id,
+                        "Longitude": review.coordinates.lon,
+                        "Latitude": review.coordinates.lat
+                    },
                 }
                 review_list.append(data)
         response = jsonify({"Filtered Reviews": review_list})
@@ -1060,7 +1117,12 @@ class FilterReviewByNeighbour(Resource):
                         "Review": review.review,
                         "Reviewee": review.type,
                         "Timestamp": review.date,
-                    }
+                    },
+                    "Map": {
+                        "id": review.coordinates.id,
+                        "Longitude": review.coordinates.lon,
+                        "Latitude": review.coordinates.lat
+                    },
                 }
                 review_list.append(data)
         response = jsonify({"Filtered Reviews": review_list})
