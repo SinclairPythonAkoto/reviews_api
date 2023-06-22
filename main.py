@@ -998,12 +998,74 @@ class FilterReviewByTenant(Resource):
 # filter reviews by reviewee - visitor
 class FilterReviewByVisitor(Resource):
     def get(self, visitor):
-        pass
+        visitor = visitor.lower()
+        review_list = []
+        find_review = db.session.query(Review).filter_by(type=visitor).first()
+        if not find_review:
+            abort(404, message="Could not find review.")
+        get_reviews = db.session.query(Review).all()
+        for review in get_reviews:
+            if visitor == review.type:
+                data = {
+                    "review_id": review.id,
+                    "status": 302,
+                    "Address": {
+                        "id": review.address.id,
+                        "unique-address-id": review.address.address_uid,
+                        "Door": review.address.door_num,
+                        "Street": review.address.street,
+                        "Location": review.address.location,
+                        "Postcode": review.address.postcode,
+                    },
+                    "Review": {
+                        "id": review.id,
+                        "unique-review-id": review.review_uid,
+                        "Rating": review.rating,
+                        "Review": review.review,
+                        "Reviewee": review.type,
+                        "Timestamp": review.date,
+                    }
+                }
+                review_list.append(data)
+        response = jsonify({"Filtered Reviews": review_list})
+        response.headers["Custom-Header"] = f"Display all reviews with matching reviewee: {visitor}."
+        return make_response(response, 302)
 
 # filter reviews by reviewee - neighbour
 class FilterReviewByNeighbour(Resource):
     def get(self, neighbour):
-        pass
+        neighbour = neighbour.lower()
+        review_list = []
+        find_review = db.session.query(Review).filter_by(type=neighbour).first()
+        if not find_review:
+            abort(404, message="Could not find review.")
+        get_reviews = db.session.query(Review).all()
+        for review in get_reviews:
+            if neighbour == review.type:
+                data = {
+                    "review_id": review.id,
+                    "status": 302,
+                    "Address": {
+                        "id": review.address.id,
+                        "unique-address-id": review.address.address_uid,
+                        "Door": review.address.door_num,
+                        "Street": review.address.street,
+                        "Location": review.address.location,
+                        "Postcode": review.address.postcode,
+                    },
+                    "Review": {
+                        "id": review.id,
+                        "unique-review-id": review.review_uid,
+                        "Rating": review.rating,
+                        "Review": review.review,
+                        "Reviewee": review.type,
+                        "Timestamp": review.date,
+                    }
+                }
+                review_list.append(data)
+        response = jsonify({"Filtered Reviews": review_list})
+        response.headers["Custom-Header"] = f"Display all reviews with matching reviewee: {neighbour}."
+        return make_response(response, 302)
 
 
 api.add_resource(HelloWorld, "/helloworld")
@@ -1017,8 +1079,8 @@ api.add_resource(FilterReviewByLocation, "/review/filter/location/<string:locati
 api.add_resource(FilterReviewByPostcode, "/review/filter/postcode/<string:postcode>")
 api.add_resource(FilterReviewByRating, "/review/filter/rating/<int:rating>")
 api.add_resource(FilterReviewByTenant, "/review/filter/reviewee/<string:tenant>")
-# api.add_resource(FilterReviewByVisitor, "/review/filter/reviewee/<string:neighbour>")
-# api.add_resource(FilterReviewByNeighbour, "/review/filter/reviewee/<string:visitor>")
+api.add_resource(FilterReviewByVisitor, "/review/filter/reviewee/<string:neighbour>")
+api.add_resource(FilterReviewByNeighbour, "/review/filter/reviewee/<string:visitor>")
 
 if __name__ == "__main__":
     app.run(debug=True)

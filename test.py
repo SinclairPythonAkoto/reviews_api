@@ -280,6 +280,37 @@ else:
 
 # find review via reviwee - tenant
 input()
+reviewee = "tenant"
+response = requests.get(BASE + f"review/filter/reviewee/{reviewee}")
+if response.status_code == 302:
+    try:
+        data = response.json()
+        print(response.headers.get("Custom-Header"))
+        print(data)
+    except json.decoder.JSONDecodeError as e:
+        print("JSON decoding error:", str(e))
+        print("Response content:", response.text)
+else:
+    print("Could not find review:", response.status_code)
+
+# find review via reviwee - visitor
+input()
+reviewee = "visitor"
+response = requests.get(BASE + f"review/filter/reviewee/{reviewee}")
+if response.status_code == 302:
+    try:
+        data = response.json()
+        print(response.headers.get("Custom-Header"))
+        print(data)
+    except json.decoder.JSONDecodeError as e:
+        print("JSON decoding error:", str(e))
+        print("Response content:", response.text)
+else:
+    print("Could not find review:", response.status_code)
+
+
+# find review via reviwee - neighbour
+input()
 reviewee = "neighbour"
 response = requests.get(BASE + f"review/filter/reviewee/{reviewee}")
 if response.status_code == 302:
