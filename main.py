@@ -172,9 +172,9 @@ def abort_if_incorrect_reviewee(reviewee):
 
 def abort_if_not_uk_postcode(postcode):
     # Regular expression pattern for UK postcode validation with case-insensitive matching
-    pattern = r"^(?i)[A-Z]{1,2}[0-9R][0-9A-Z]? [0-9][A-Z-[CIKMOV]]{2}$"
+    pattern = r"^(?i)([A-Z]{1,2}\d{1,2})(\d[A-Z]{2})?$"
     # Remove any whitespace from the postcode
-    postcode = postcode.replace(" ", "")
+    # postcode = postcode.replace(" ", "")
     # Check if the postcode matches the pattern
     if not re.match(pattern, postcode):
         abort(400, message="Please enter a valid UK postcode.")
@@ -890,7 +890,38 @@ class FilterReviewByLocation(Resource):
 # filter reviews by postcode
 class FilterReviewByPostcode(Resource):
     def get(self, postcode):
-        pass
+        postcode = postcode.lower()
+        review_list = []
+        find_review = db.session.query(Address).filter_by(postcode=postcode).first()
+        if not find_review:
+            abort(404, message="Could not find review.")
+        get_reviews = db.session.query(Review).all()
+        for review in get_reviews:
+            if postcode == review.address.postcode:
+                data = {
+                    "review_id": review.id,
+                    "status": 302,
+                    "Address": {
+                        "id": review.address.id,
+                        "unique-address-id": review.address.address_uid,
+                        "Door": review.address.door_num,
+                        "Street": review.address.street,
+                        "Location": review.address.location,
+                        "Postcode": review.address.postcode,
+                    },
+                    "Review": {
+                        "id": review.id,
+                        "unique-review-id": review.review_uid,
+                        "Rating": review.rating,
+                        "Review": review.review,
+                        "Reviewee": review.type,
+                        "Timestamp": review.date,
+                    }
+                }
+                review_list.append(data)
+        response = jsonify({"Filtered Reviews": review_list})
+        response.headers["Custom-Header"] = f"Display all reviews with matching postcode: {postcode}."
+        return make_response(response, 302)
 
 # filter reviews by rating
 class FilterReviewByRating(Resource):
@@ -906,7 +937,7 @@ api.add_resource(CommunityReviewUID, "/review/<string:review_uid>")
 api.add_resource(FilterReviewByDoor, "/review/filter/door/<string:door>")
 api.add_resource(FilterReviewByStreet, "/review/filter/street/<string:street>")
 api.add_resource(FilterReviewByLocation, "/review/filter/location/<string:location>")
-# api.add_resource(FilterReviewByPostcode, "/review/filter/postcode/<string:postcode>")
+api.add_resource(FilterReviewByPostcode, "/review/filter/postcode/<string:postcode>")
 # api.add_resource(FilterReviewByRating, "/review/filter/rating/<int:rating>")
 
 if __name__ == "__main__":
