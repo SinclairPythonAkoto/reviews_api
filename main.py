@@ -926,7 +926,42 @@ class FilterReviewByPostcode(Resource):
 # filter reviews by rating
 class FilterReviewByRating(Resource):
     def get(self, rating):
-        pass
+        abort_if_incorrect_rating(rating)
+        review_list = []
+        find_review = db.session.query(Review).filter_by(rating=rating).first()
+        if not find_review:
+            abort(404, message="Could not find review.")
+        get_reviews = db.session.query(Review).all()
+        for review in get_reviews:
+            if rating == review.rating:
+                data = {
+                    "review_id": review.id,
+                    "status": 302,
+                    "Address": {
+                        "id": review.address.id,
+                        "unique-address-id": review.address.address_uid,
+                        "Door": review.address.door_num,
+                        "Street": review.address.street,
+                        "Location": review.address.location,
+                        "Postcode": review.address.postcode,
+                    },
+                    "Review": {
+                        "id": review.id,
+                        "unique-review-id": review.review_uid,
+                        "Rating": review.rating,
+                        "Review": review.review,
+                        "Reviewee": review.type,
+                        "Timestamp": review.date,
+                    }
+                }
+                review_list.append(data)
+        response = jsonify({"Filtered Reviews": review_list})
+        response.headers["Custom-Header"] = f"Display all reviews with matching rating: {rating}."
+        return make_response(response, 302)
+
+# filter reviews by reviewee - tenant
+# filter reviews by reviewee - visitor
+# filter reviews by reviewee - neighbour
 
 
 api.add_resource(HelloWorld, "/helloworld")
@@ -938,7 +973,7 @@ api.add_resource(FilterReviewByDoor, "/review/filter/door/<string:door>")
 api.add_resource(FilterReviewByStreet, "/review/filter/street/<string:street>")
 api.add_resource(FilterReviewByLocation, "/review/filter/location/<string:location>")
 api.add_resource(FilterReviewByPostcode, "/review/filter/postcode/<string:postcode>")
-# api.add_resource(FilterReviewByRating, "/review/filter/rating/<int:rating>")
+api.add_resource(FilterReviewByRating, "/review/filter/rating/<int:rating>")
 
 if __name__ == "__main__":
     app.run(debug=True)

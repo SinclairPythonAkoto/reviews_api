@@ -261,3 +261,19 @@ if response.status_code == 302:
         print("Response content:", response.text)
 else:
     print("Could not find review:", response.status_code)
+
+
+# find review via rating
+input()
+rating = 5
+response = requests.get(BASE + f"review/filter/rating/{rating}")
+if response.status_code == 302:
+    try:
+        data = response.json()
+        print(response.headers.get("Custom-Header"))
+        print(data)
+    except json.decoder.JSONDecodeError as e:
+        print("JSON decoding error:", str(e))
+        print("Response content:", response.text)
+else:
+    print("Could not find review:", response.status_code)
