@@ -144,7 +144,7 @@ else:
 
 # find review using review_uid
 input()
-review_uid = "5678aed5-99da-4cea-bce7-1dabbd4aed38"    # uid from review 4
+review_uid = "9316134a-d1c9-4fff-819d-a7e17f30e298"    # uid from review 4
 response = requests.get(BASE + f"review/{review_uid}")
 if response.status_code == 302:
     try:
@@ -220,6 +220,21 @@ else:
 input()
 street = "Winning Hill Close"
 response = requests.get(BASE + f"review/filter/street/{street}")
+if response.status_code == 302:
+    try:
+        data = response.json()
+        print(response.headers.get("Custom-Header"))
+        print(data)
+    except json.decoder.JSONDecodeError as e:
+        print("JSON decoding error:", str(e))
+        print("Response content:", response.text)
+else:
+    print("Could not find review:", response.status_code)
+
+# find review via location
+input()
+location = "Gorton"
+response = requests.get(BASE + f"review/filter/location/{location}")
 if response.status_code == 302:
     try:
         data = response.json()

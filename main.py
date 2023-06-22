@@ -245,13 +245,13 @@ class CommunityReviewID(Resource):
         # get values from args.get("...")
         address_uuid = str(uuid.uuid4())
         review_uuid = str(uuid.uuid4())
-        door = args.get("door")
-        street = args.get("street").lower()
-        location = args.get("location")
-        postcode = args.get("postcode").lower()
+        door = args.get("door").lower() if args.get("door") else None
+        street = args.get("street").lower() if args.get("street") else None
+        location = args.get("location").lower() if args.get("location") else None
+        postcode = args.get("postcode").lower() if args.get("postcode") else None
         rating = args.get("rating")
         review = args.get("review")
-        reviewee = args.get("reviewee").lower()
+        reviewee = args.get("reviewee").lower() if args.get("reviewee") else None
         # abort_if_not_uk_postcode(postcode)
         abort_if_incorrect_reviewee(reviewee)
         # validate door requ1111est - check if one already exists
@@ -517,14 +517,13 @@ class CreateReview(Resource):
         args = create_review_put_args.parse_args()
         address_uuid = str(uuid.uuid4())
         review_uuid = str(uuid.uuid4())
-        # get args values
-        door = args.get("door")
-        street = args.get("street").lower()
-        location = args.get("location")
-        postcode = args.get("postcode").lower()
+        door = args.get("door").lower() if args.get("door") else None
+        street = args.get("street").lower() if args.get("street") else None
+        location = args.get("location").lower() if args.get("location") else None
+        postcode = args.get("postcode").lower() if args.get("postcode") else None
         rating = args.get("rating")
         review = args.get("review")
-        reviewee = args.get("reviewee").lower()
+        reviewee = args.get("reviewee").lower() if args.get("reviewee") else None
         # abort_if_not_uk_postcode(postcode)
         abort_if_incorrect_reviewee(reviewee)
         # validate door requ1111est - check if one already exists
@@ -855,7 +854,38 @@ class FilterReviewByStreet(Resource):
 # filter reviews by location
 class FilterReviewByLocation(Resource):
     def get(self, location):
-        pass
+        location = location.lower()
+        review_list = []
+        find_review = db.session.query(Address).filter_by(location=location).first()
+        if not find_review:
+            abort(404, message="Could not find review.")
+        get_reviews = db.session.query(Review).all()
+        for review in get_reviews:
+            if location == review.address.location:
+                data = {
+                    "review_id": review.id,
+                    "status": 302,
+                    "Address": {
+                        "id": review.address.id,
+                        "unique-address-id": review.address.address_uid,
+                        "Door": review.address.door_num,
+                        "Street": review.address.street,
+                        "Location": review.address.location,
+                        "Postcode": review.address.postcode,
+                    },
+                    "Review": {
+                        "id": review.id,
+                        "unique-review-id": review.review_uid,
+                        "Rating": review.rating,
+                        "Review": review.review,
+                        "Reviewee": review.type,
+                        "Timestamp": review.date,
+                    }
+                }
+                review_list.append(data)
+        response = jsonify({"Filtered Reviews": review_list})
+        response.headers["Custom-Header"] = f"Display all reviews with matching town or city: {location}."
+        return make_response(response, 302)
 
 # filter reviews by postcode
 class FilterReviewByPostcode(Resource):
@@ -875,9 +905,9 @@ api.add_resource(CreateReview, "/review/create")
 api.add_resource(CommunityReviewUID, "/review/<string:review_uid>")
 api.add_resource(FilterReviewByDoor, "/review/filter/door/<string:door>")
 api.add_resource(FilterReviewByStreet, "/review/filter/street/<string:street>")
-api.add_resource(FilterReviewByLocation,)
-api.add_resource(FilterReviewByLocation,)
-api.add_resource(FilterReviewByLocation,)
+api.add_resource(FilterReviewByLocation, "/review/filter/location/<string:location>")
+# api.add_resource(FilterReviewByPostcode, "/review/filter/postcode/<string:postcode>")
+# api.add_resource(FilterReviewByRating, "/review/filter/rating/<int:rating>")
 
 if __name__ == "__main__":
     app.run(debug=True)
